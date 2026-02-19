@@ -10,7 +10,7 @@
 
 ### 🛠️ Teknologi
 * HTML5 / CSS3 / JavaScript
-* (Sebutkan API Quran yang kamu gunakan di sini)
+* (https://quran.com/id)
 
 ---
 Semoga proyek ini bermanfaat dan menjadi amal jariyah. Aamiin.

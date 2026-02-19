@@ -1,5 +1,5 @@
 # 📖 Maos Quran
-**Maos Quran** adalah platform digital sederhana yang dirancang khusus untuk memberikan pengalaman membaca Al-Qur'an yang tenang, bersih, dan bebas gangguan.
+**Maos Quran** adalah sebuah platform digital adaptif yang dirancang bukan sekadar sebagai alat baca, melainkan sebagai ekosistem interaksi spiritual di era disrupsi. Kami percaya bahwa tantangan zaman digital harus dijawab dengan penguatan iman yang juga berbasis digital—menjadikan gawai sebagai jembatan, bukan penghalang, untuk mendekatkan diri kepada Kalamullah.
 
 > *"Maos" adalah sebuah istilah kata yang berasal dari Bahasa Jawa (Krama Inggil) yang memiliki arti “membaca” dalam Bahasa Indonesia, atau “read” dalam Bahasa Inggris. maos bukan sekadar aktivitas melihat tulisan lalu memahami isi kalimat, melainkan sebuah simbol dari perjalanan hidup manusia untuk terus bertumbuh.
 

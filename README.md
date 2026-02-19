@@ -17,7 +17,7 @@ bahwa manusia yang terus membaca, adalah manusia yang terus berkembang, terus be
 
 ### 🛠️ Teknologi
 * HTML5 / CSS3 / JavaScript
-* (https://quran.com/id)
+* (al quran.cloud)
 
 ---
 Semoga proyek ini bermanfaat dan menjadi amal jariyah. Aamiin.

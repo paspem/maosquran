@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Maos Quran</title>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Amiri:wght@400;700&family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --cream: #f5f0e8; --parchment: #ede5d0; --gold: #c8a84b; --gold-light: #e6c97a;
+      --brown: #4a3728; --brown-mid: #7a5c3e; --green: #2d5a3d; --green-light: #3d7a52;
+      --ink: #1a1208; --shadow: rgba(74,55,40,0.15);
+    }
+    body {
+      background: var(--cream); color: var(--ink);
+      font-family: 'Lato', sans-serif; min-height: 100vh;
+      background-image:
+        radial-gradient(ellipse at 20% 0%, rgba(200,168,75,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 100%, rgba(45,90,61,0.10) 0%, transparent 60%);
+    }
+    header {
+      background: var(--green); padding: 16px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.25); position: sticky; top: 0; z-index: 100;
+    }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon {
+      width: 40px; height: 40px; background: var(--gold); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .logo h1 { font-family: 'Playfair Display', serif; color: var(--cream); font-size: 1.5rem; letter-spacing: 0.04em; }
+    .logo h1 span { color: var(--gold-light); }
+    #apiStatus {
+      font-size: 0.72rem; color: rgba(255,255,255,0.75);
+      background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 20px;
+      max-width: 180px; text-align: right; line-height: 1.3;
+    }
+    .controls {
+      background: var(--parchment); border-bottom: 1px solid rgba(200,168,75,0.3);
+      padding: 14px 24px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    }
+    .cg { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 160px; }
+    label { font-size: 0.75rem; font-weight: 700; color: var(--brown-mid); text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
+    select {
+      flex: 1; padding: 8px 12px; border: 1.5px solid var(--gold); border-radius: 8px;
+      background: white; color: var(--ink); font-family: 'Lato', sans-serif;
+      font-size: 0.88rem; cursor: pointer; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    select:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(45,90,61,0.15); }
+    .btn {
+      padding: 9px 18px; border: none; border-radius: 8px;
+      font-family: 'Lato', sans-serif; font-weight: 700; font-size: 0.85rem;
+      cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+    .btn-primary { background: var(--green); color: white; }
+    .btn-primary:hover:not(:disabled) { background: var(--green-light); transform: translateY(-1px); }
+    .btn-gold { background: var(--gold); color: var(--brown); }
+    .btn-gold:hover:not(:disabled) { background: var(--gold-light); transform: translateY(-1px); }
+
+    /* Surah Header */
+    #surahHeader { text-align: center; padding: 28px 24px 12px; display: none; }
+    #surahHeader.vis { display: block; animation: fadeIn 0.4s ease; }
+    #surahArabicName { font-family: 'Amiri', serif; font-size: 2.6rem; color: var(--green); line-height: 1.3; margin-bottom: 6px; }
+    #surahLatinName { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: var(--brown); margin-bottom: 4px; }
+    #surahMeta { font-size: 0.8rem; color: var(--brown-mid); letter-spacing: 0.06em; text-transform: uppercase; }
+    .divider { margin: 14px auto; width: 120px; height: 2px; background: linear-gradient(to right, transparent, var(--gold), transparent); position: relative; }
+    .divider::before { content: '✦'; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); background: var(--cream); color: var(--gold); padding: 0 6px; font-size: 11px; }
+
+    /* Basmalah */
+    #basmalah { text-align: center; font-family: 'Amiri Quran', serif; font-size: 1.9rem; color: var(--green); padding: 12px; display: none; }
+    #basmalah.vis { display: block; animation: fadeIn 0.4s ease 0.1s both; }
+
+    /* Ayat */
+    #ayatContainer { max-width: 800px; margin: 0 auto; padding: 14px 24px 80px; }
+    .ayat-card {
+      background: white; border-radius: 14px; padding: 24px 28px; margin-bottom: 14px;
+      border: 1px solid rgba(200,168,75,0.2); box-shadow: 0 2px 10px var(--shadow);
+      animation: slideUp 0.4s ease both; transition: box-shadow 0.2s, transform 0.2s;
+      position: relative; overflow: hidden;
+    }
+    .ayat-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: linear-gradient(to bottom, var(--gold), var(--green)); }
+    .ayat-card:hover { box-shadow: 0 6px 22px var(--shadow); transform: translateY(-2px); }
+    .ayat-top { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+    .ayat-num {
+      width: 32px; height: 32px; background: var(--green); color: white; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700;
+    }
+    .ayat-arabic {
+      font-family: 'Amiri Quran', serif; font-size: 1.85rem; line-height: 2.2;
+      text-align: right; direction: rtl; color: var(--ink);
+      margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px dashed rgba(200,168,75,0.35);
+    }
+    .ayat-trans { font-size: 0.9rem; line-height: 1.75; color: #4a4a4a; }
+    .trans-label { font-size: 0.72rem; font-weight: 700; color: var(--brown-mid); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 4px; }
+
+    /* Loading */
+    #loading { text-align: center; padding: 60px 24px; display: none; }
+    #loading.vis { display: block; }
+    .spinner { width: 42px; height: 42px; border: 3px solid var(--parchment); border-top-color: var(--green); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 14px; }
+    #loading p { color: var(--brown-mid); font-size: 0.88rem; }
+    #loadingDetail { font-size: 0.78rem; margin-top: 6px; opacity: 0.7; }
+
+    /* Error */
+    #errorBox { background: #fff8e1; border: 1px solid #ffe082; color: #795548; padding: 16px 20px; border-radius: 12px; margin: 16px 24px; font-size: 0.88rem; line-height: 1.6; display: none; }
+    #errorBox.vis { display: block; }
+    #errorBox strong { display: block; margin-bottom: 6px; font-size: 0.95rem; color: #5d4037; }
+    .retry-btn { margin-top: 10px; background: var(--green); color: white; border: none; padding: 8px 18px; border-radius: 8px; font-family: 'Lato', sans-serif; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+    .retry-btn:hover { background: var(--green-light); }
+
+    /* Empty */
+    .empty-state { text-align: center; padding: 70px 24px; color: var(--brown-mid); }
+    .empty-state .icon { font-size: 3.2rem; margin-bottom: 14px; }
+    .empty-state h3 { font-family: 'Playfair Display', serif; font-size: 1.35rem; margin-bottom: 8px; color: var(--brown); }
+    .empty-state p { font-size: 0.88rem; line-height: 1.65; }
+
+    /* Nav */
+    #navBar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--green); padding: 10px 24px; display: none; gap: 12px; justify-content: center; align-items: center; box-shadow: 0 -4px 18px rgba(0,0,0,0.2); }
+    #navBar.vis { display: flex; }
+    #navInfo { color: rgba(255,255,255,0.85); font-size: 0.85rem; min-width: 60px; text-align: center; }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 600px) {
+      .logo h1 { font-size: 1.2rem; }
+      .controls { padding: 10px 14px; }
+      .ayat-card { padding: 18px 16px; }
+      .ayat-arabic { font-size: 1.55rem; }
+      #ayatContainer { padding: 10px 12px 80px; }
+      #surahArabicName { font-size: 2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">📖</div>
+    <h1>Maos <span>Quran</span></h1>
+  </div>
+  <div id="apiStatus">Memuat daftar surah...</div>
+</header>
+
+<div class="controls">
+  <div class="cg">
+    <label for="surahSel">Surah</label>
+    <select id="surahSel"><option value="">— Pilih Surah —</option></select>
+  </div>
+  <div class="cg" style="max-width:175px;">
+    <label for="langSel">Terjemahan</label>
+    <select id="langSel">
+      <option value="id">Bahasa Indonesia</option>
+      <option value="en">English</option>
+    </select>
+  </div>
+  <button class="btn btn-primary" id="btnBaca" onclick="loadSurah()">Baca</button>
+  <button class="btn btn-gold" onclick="randomSurah()">🎲 Acak</button>
+</div>
+
+<div id="surahHeader">
+  <div id="surahArabicName"></div>
+  <div id="surahLatinName"></div>
+  <div id="surahMeta"></div>
+  <div class="divider"></div>
+</div>
+<div id="basmalah">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
+
+<div id="errorBox">
+  <strong>⚠️ Gagal memuat ayat</strong>
+  <span id="errorDetail">Semua sumber data tidak merespons.</span>
+  <br/><button class="retry-btn" onclick="retryLoad()">🔄 Coba Lagi</button>
+</div>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <p>Memuat ayat...</p>
+  <p id="loadingDetail"></p>
+</div>
+
+<div id="ayatContainer">
+  <div class="empty-state">
+    <div class="icon">🕌</div>
+    <h3>Bismillah, mulai membaca</h3>
+    <p>Pilih surah dari daftar di atas,<br/>lalu tekan tombol <strong>Baca</strong>.</p>
+  </div>
+</div>
+
+<div id="navBar">
+  <button class="btn btn-gold" id="btnPrev" onclick="prevSurah()">← Prev</button>
+  <span id="navInfo">—</span>
+  <button class="btn btn-gold" id="btnNext" onclick="nextSurah()">Next →</button>
+</div>
+
+<script>
+// ─── SURAH METADATA (embedded, always available) ─────────────────────────────
+const SURAH_META = [
+  {n:1,ar:'الفاتحة',la:'Al-Fatihah',tr:'Pembuka',rev:'Makkah',total:7},
+  {n:2,ar:'البقرة',la:'Al-Baqarah',tr:'Sapi Betina',rev:'Madinah',total:286},
+  {n:3,ar:'آل عمران',la:"Ali 'Imran",tr:'Keluarga Imran',rev:'Madinah',total:200},
+  {n:4,ar:'النساء',la:"An-Nisa'",tr:'Perempuan',rev:'Madinah',total:176},
+  {n:5,ar:'المائدة',la:"Al-Ma'idah",tr:'Hidangan',rev:'Madinah',total:120},
+  {n:6,ar:'الأنعام',la:"Al-An'am",tr:'Binatang Ternak',rev:'Makkah',total:165},
+  {n:7,ar:'الأعراف',la:"Al-A'raf",tr:'Tempat Tertinggi',rev:'Makkah',total:206},
+  {n:8,ar:'الأنفال',la:'Al-Anfal',tr:'Rampasan Perang',rev:'Madinah',total:75},
+  {n:9,ar:'التوبة',la:'At-Tawbah',tr:'Pengampunan',rev:'Madinah',total:129},
+  {n:10,ar:'يونس',la:'Yunus',tr:'Nabi Yunus',rev:'Makkah',total:109},
+  {n:11,ar:'هود',la:'Hud',tr:'Nabi Hud',rev:'Makkah',total:123},
+  {n:12,ar:'يوسف',la:'Yusuf',tr:'Nabi Yusuf',rev:'Makkah',total:111},
+  {n:13,ar:'الرعد',la:"Ar-Ra'd",tr:'Guruh',rev:'Madinah',total:43},
+  {n:14,ar:'إبراهيم',la:'Ibrahim',tr:'Nabi Ibrahim',rev:'Makkah',total:52},
+  {n:15,ar:'الحجر',la:'Al-Hijr',tr:'Bukit Hijr',rev:'Makkah',total:99},
+  {n:16,ar:'النحل',la:'An-Nahl',tr:'Lebah',rev:'Makkah',total:128},
+  {n:17,ar:'الإسراء',la:"Al-Isra'",tr:'Perjalanan Malam',rev:'Makkah',total:111},
+  {n:18,ar:'الكهف',la:'Al-Kahf',tr:'Gua',rev:'Makkah',total:110},
+  {n:19,ar:'مريم',la:'Maryam',tr:'Maryam',rev:'Makkah',total:98},
+  {n:20,ar:'طه',la:'Taha',tr:'Taha',rev:'Makkah',total:135},
+  {n:21,ar:'الأنبياء',la:"Al-Anbiya'",tr:'Para Nabi',rev:'Makkah',total:112},
+  {n:22,ar:'الحج',la:'Al-Hajj',tr:'Haji',rev:'Madinah',total:78},
+  {n:23,ar:'المؤمنون',la:"Al-Mu'minun",tr:'Orang Mukmin',rev:'Makkah',total:118},
+  {n:24,ar:'النور',la:'An-Nur',tr:'Cahaya',rev:'Madinah',total:64},
+  {n:25,ar:'الفرقان',la:'Al-Furqan',tr:'Pembeda',rev:'Makkah',total:77},
+  {n:26,ar:'الشعراء',la:"Asy-Syu'ara'",tr:'Para Penyair',rev:'Makkah',total:227},
+  {n:27,ar:'النمل',la:'An-Naml',tr:'Semut',rev:'Makkah',total:93},
+  {n:28,ar:'القصص',la:'Al-Qasas',tr:'Kisah-Kisah',rev:'Makkah',total:88},
+  {n:29,ar:'العنكبوت',la:'Al-Ankabut',tr:'Laba-Laba',rev:'Makkah',total:69},
+  {n:30,ar:'الروم',la:'Ar-Rum',tr:'Bangsa Romawi',rev:'Makkah',total:60},
+  {n:31,ar:'لقمان',la:'Luqman',tr:'Luqman',rev:'Makkah',total:34},
+  {n:32,ar:'السجدة',la:'As-Sajdah',tr:'Sujud',rev:'Makkah',total:30},
+  {n:33,ar:'الأحزاب',la:'Al-Ahzab',tr:'Golongan Bersekutu',rev:'Madinah',total:73},
+  {n:34,ar:'سبأ',la:"Saba'",tr:'Kaum Saba',rev:'Makkah',total:54},
+  {n:35,ar:'فاطر',la:'Fatir',tr:'Pencipta',rev:'Makkah',total:45},
+  {n:36,ar:'يس',la:'Yasin',tr:'Yasin',rev:'Makkah',total:83},
+  {n:37,ar:'الصافات',la:'As-Saffat',tr:'Barisan',rev:'Makkah',total:182},
+  {n:38,ar:'ص',la:'Sad',tr:'Sad',rev:'Makkah',total:88},
+  {n:39,ar:'الزمر',la:'Az-Zumar',tr:'Rombongan',rev:'Makkah',total:75},
+  {n:40,ar:'غافر',la:'Ghafir',tr:'Maha Pengampun',rev:'Makkah',total:85},
+  {n:41,ar:'فصلت',la:'Fussilat',tr:'Dijelaskan',rev:'Makkah',total:54},
+  {n:42,ar:'الشورى',la:'Asy-Syura',tr:'Musyawarah',rev:'Makkah',total:53},
+  {n:43,ar:'الزخرف',la:'Az-Zukhruf',tr:'Perhiasan',rev:'Makkah',total:89},
+  {n:44,ar:'الدخان',la:'Ad-Dukhan',tr:'Kabut',rev:'Makkah',total:59},
+  {n:45,ar:'الجاثية',la:'Al-Jasiyah',tr:'Berlutut',rev:'Makkah',total:37},
+  {n:46,ar:'الأحقاف',la:'Al-Ahqaf',tr:'Bukit Pasir',rev:'Makkah',total:35},
+  {n:47,ar:'محمد',la:'Muhammad',tr:'Nabi Muhammad',rev:'Madinah',total:38},
+  {n:48,ar:'الفتح',la:'Al-Fath',tr:'Kemenangan',rev:'Madinah',total:29},
+  {n:49,ar:'الحجرات',la:'Al-Hujurat',tr:'Kamar-Kamar',rev:'Madinah',total:18},
+  {n:50,ar:'ق',la:'Qaf',tr:'Qaf',rev:'Makkah',total:45},
+  {n:51,ar:'الذاريات',la:'Az-Zariyat',tr:'Angin yang Menerbangkan',rev:'Makkah',total:60},
+  {n:52,ar:'الطور',la:'At-Tur',tr:'Bukit Sinai',rev:'Makkah',total:49},
+  {n:53,ar:'النجم',la:'An-Najm',tr:'Bintang',rev:'Makkah',total:62},
+  {n:54,ar:'القمر',la:'Al-Qamar',tr:'Bulan',rev:'Makkah',total:55},
+  {n:55,ar:'الرحمن',la:'Ar-Rahman',tr:'Yang Maha Pengasih',rev:'Madinah',total:78},
+  {n:56,ar:'الواقعة',la:"Al-Waqi'ah",tr:'Hari Kiamat',rev:'Makkah',total:96},
+  {n:57,ar:'الحديد',la:'Al-Hadid',tr:'Besi',rev:'Madinah',total:29},
+  {n:58,ar:'المجادلة',la:'Al-Mujadalah',tr:'Wanita yang Mengajukan Gugatan',rev:'Madinah',total:22},
+  {n:59,ar:'الحشر',la:'Al-Hasyr',tr:'Pengusiran',rev:'Madinah',total:24},
+  {n:60,ar:'الممتحنة',la:'Al-Mumtahanah',tr:'Wanita yang Diuji',rev:'Madinah',total:13},
+  {n:61,ar:'الصف',la:'As-Saff',tr:'Barisan',rev:'Madinah',total:14},
+  {n:62,ar:'الجمعة',la:"Al-Jumu'ah",tr:'Jumat',rev:'Madinah',total:11},
+  {n:63,ar:'المنافقون',la:'Al-Munafiqun',tr:'Orang-Orang Munafik',rev:'Madinah',total:11},
+  {n:64,ar:'التغابن',la:'At-Tagabun',tr:'Pengungkapan Kesalahan',rev:'Madinah',total:18},
+  {n:65,ar:'الطلاق',la:'At-Talaq',tr:'Talak',rev:'Madinah',total:12},
+  {n:66,ar:'التحريم',la:'At-Tahrim',tr:'Pengharaman',rev:'Madinah',total:12},
+  {n:67,ar:'الملك',la:'Al-Mulk',tr:'Kerajaan',rev:'Makkah',total:30},
+  {n:68,ar:'القلم',la:'Al-Qalam',tr:'Pena',rev:'Makkah',total:52},
+  {n:69,ar:'الحاقة',la:"Al-Haqqah",tr:'Hari Kiamat yang Pasti',rev:'Makkah',total:52},
+  {n:70,ar:'المعارج',la:"Al-Ma'arij",tr:'Tempat-Tempat Naik',rev:'Makkah',total:44},
+  {n:71,ar:'نوح',la:'Nuh',tr:'Nabi Nuh',rev:'Makkah',total:28},
+  {n:72,ar:'الجن',la:'Al-Jinn',tr:'Jin',rev:'Makkah',total:28},
+  {n:73,ar:'المزمل',la:'Al-Muzzammil',tr:'Orang Berselimut',rev:'Makkah',total:20},
+  {n:74,ar:'المدثر',la:'Al-Muddassir',tr:'Orang Berkemul',rev:'Makkah',total:56},
+  {n:75,ar:'القيامة',la:'Al-Qiyamah',tr:'Hari Kiamat',rev:'Makkah',total:40},
+  {n:76,ar:'الإنسان',la:'Al-Insan',tr:'Manusia',rev:'Madinah',total:31},
+  {n:77,ar:'المرسلات',la:'Al-Mursalat',tr:'Malaikat yang Diutus',rev:'Makkah',total:50},
+  {n:78,ar:'النبأ',la:"An-Naba'",tr:'Berita Besar',rev:'Makkah',total:40},
+  {n:79,ar:'النازعات',la:"An-Nazi'at",tr:'Malaikat yang Mencabut',rev:'Makkah',total:46},
+  {n:80,ar:'عبس',la:'Abasa',tr:'Berwajah Masam',rev:'Makkah',total:42},
+  {n:81,ar:'التكوير',la:'At-Takwir',tr:'Penggulungan',rev:'Makkah',total:29},
+  {n:82,ar:'الانفطار',la:'Al-Infitar',tr:'Terbelah',rev:'Makkah',total:19},
+  {n:83,ar:'المطففين',la:'Al-Mutaffifin',tr:'Orang-Orang yang Curang',rev:'Makkah',total:36},
+  {n:84,ar:'الانشقاق',la:'Al-Insyiqaq',tr:'Terbelah',rev:'Makkah',total:25},
+  {n:85,ar:'البروج',la:'Al-Buruj',tr:'Gugusan Bintang',rev:'Makkah',total:22},
+  {n:86,ar:'الطارق',la:'At-Tariq',tr:'Yang Datang di Malam Hari',rev:'Makkah',total:17},
+  {n:87,ar:'الأعلى',la:"Al-A'la",tr:'Yang Maha Tinggi',rev:'Makkah',total:19},
+  {n:88,ar:'الغاشية',la:'Al-Ghasiyah',tr:'Hari Pembalasan',rev:'Makkah',total:26},
+  {n:89,ar:'الفجر',la:'Al-Fajr',tr:'Fajar',rev:'Makkah',total:30},
+  {n:90,ar:'البلد',la:'Al-Balad',tr:'Negeri',rev:'Makkah',total:20},
+  {n:91,ar:'الشمس',la:'Asy-Syams',tr:'Matahari',rev:'Makkah',total:15},
+  {n:92,ar:'الليل',la:'Al-Lail',tr:'Malam',rev:'Makkah',total:21},
+  {n:93,ar:'الضحى',la:'Ad-Duha',tr:'Waktu Duha',rev:'Makkah',total:11},
+  {n:94,ar:'الشرح',la:'Al-Insyirah',tr:'Kelapangan',rev:'Makkah',total:8},
+  {n:95,ar:'التين',la:'At-Tin',tr:'Buah Tin',rev:'Makkah',total:8},
+  {n:96,ar:'العلق',la:"Al-'Alaq",tr:'Segumpal Darah',rev:'Makkah',total:19},
+  {n:97,ar:'القدر',la:'Al-Qadr',tr:'Kemuliaan',rev:'Makkah',total:5},
+  {n:98,ar:'البينة',la:'Al-Bayyinah',tr:'Bukti yang Nyata',rev:'Madinah',total:8},
+  {n:99,ar:'الزلزلة',la:'Az-Zalzalah',tr:'Gempa Bumi',rev:'Madinah',total:8},
+  {n:100,ar:'العاديات',la:"Al-'Adiyat",tr:'Kuda Perang yang Berlari Kencang',rev:'Makkah',total:11},
+  {n:101,ar:'القارعة',la:"Al-Qari'ah",tr:'Hari Kiamat',rev:'Makkah',total:11},
+  {n:102,ar:'التكاثر',la:'At-Takasur',tr:'Bermegah-Megahan',rev:'Makkah',total:8},
+  {n:103,ar:'العصر',la:"Al-'Asr",tr:'Masa',rev:'Makkah',total:3},
+  {n:104,ar:'الهمزة',la:'Al-Humazah',tr:'Pengumpat',rev:'Makkah',total:9},
+  {n:105,ar:'الفيل',la:'Al-Fil',tr:'Gajah',rev:'Makkah',total:5},
+  {n:106,ar:'قريش',la:'Quraisy',tr:'Suku Quraisy',rev:'Makkah',total:4},
+  {n:107,ar:'الماعون',la:"Al-Ma'un",tr:'Barang yang Berguna',rev:'Makkah',total:7},
+  {n:108,ar:'الكوثر',la:'Al-Kausar',tr:'Nikmat yang Berlimpah',rev:'Makkah',total:3},
+  {n:109,ar:'الكافرون',la:'Al-Kafirun',tr:'Orang-Orang Kafir',rev:'Makkah',total:6},
+  {n:110,ar:'النصر',la:'An-Nasr',tr:'Pertolongan',rev:'Madinah',total:3},
+  {n:111,ar:'المسد',la:'Al-Masad',tr:'Gumpalan Api',rev:'Makkah',total:5},
+  {n:112,ar:'الإخلاص',la:'Al-Ikhlas',tr:'Kemurnian Iman',rev:'Makkah',total:4},
+  {n:113,ar:'الفلق',la:'Al-Falaq',tr:'Waktu Subuh',rev:'Makkah',total:5},
+  {n:114,ar:'الناس',la:'An-Nas',tr:'Manusia',rev:'Makkah',total:6}
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let currentNum = null;
+
+// ─── BOOT ────────────────────────────────────────────────────────────────────
+(function init() {
+  const sel = document.getElementById('surahSel');
+  SURAH_META.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s.n;
+    o.textContent = `${s.n}. ${s.la} — ${s.ar}`;
+    sel.appendChild(o);
+  });
+  setStatus('✓ Siap');
+})();
+
+// ─── LOAD SURAH ──────────────────────────────────────────────────────────────
+async function loadSurah(num) {
+  const n = num || parseInt(document.getElementById('surahSel').value);
+  if (!n) { alert('Silakan pilih surah terlebih dahulu.'); return; }
+  currentNum = n;
+  document.getElementById('surahSel').value = n;
+  document.getElementById('btnBaca').disabled = true;
+  showLoading(true, 'Menghubungi server...');
+  hideError(); clearContent();
+
+  const lang = document.getElementById('langSel').value;
+
+  // Strategi: coba sumber 1, 2, 3, 4 secara berurutan
+  const sources = [
+    { name: 'alquran.cloud', fn: () => fetchFromAlquranCloud(n, lang) },
+    { name: 'cdn.jsdelivr.net (fawazahmed0)', fn: () => fetchFromJsdelivr(n, lang) },
+    { name: 'quranapi.pages.dev', fn: () => fetchFromQuranApiPages(n, lang) },
+    { name: 'alquran-api.pages.dev', fn: () => fetchFromAlquranApiPages(n, lang) },
+  ];
+
+  for (const src of sources) {
+    try {
+      showLoading(true, `Mencoba: ${src.name}...`);
+      const ayahs = await src.fn();
+      if (ayahs && ayahs.length > 0) {
+        setStatus(`✓ ${src.name}`);
+        renderSurah(ayahs, n);
+        showLoading(false);
+        document.getElementById('btnBaca').disabled = false;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+    } catch(e) {
+      console.warn(`[${src.name}] failed:`, e.message);
+    }
+  }
+
+  // Semua gagal
+  showLoading(false);
+  document.getElementById('btnBaca').disabled = false;
+  showError(`Tidak dapat memuat Surah ${n}. Pastikan koneksi internet aktif dan coba lagi.`);
+  setStatus('⚠ Gagal memuat');
+}
+
+// ─── SOURCE 1: alquran.cloud — Arabic + terjemahan Indonesia/Inggris ─────────
+// Edition ID yang valid: id.indonesian, en.asad
+async function fetchFromAlquranCloud(n, lang) {
+  const edition = lang === 'id' ? 'id.indonesian' : 'en.asad';
+  const [arRes, trRes] = await Promise.all([
+    fetchWithTimeout(`https://api.alquran.cloud/v1/surah/${n}`, 8000),
+    fetchWithTimeout(`https://api.alquran.cloud/v1/surah/${n}/${edition}`, 8000)
+  ]);
+  const arJson = await arRes.json();
+  const trJson = await trRes.json();
+  if (arJson.code !== 200) throw new Error('bad response');
+  return arJson.data.ayahs.map((a, i) => ({
+    num: a.numberInSurah,
+    arabic: a.text,
+    trans: trJson.data?.ayahs?.[i]?.text || '—'
+  }));
+}
+
+// ─── SOURCE 2: cdn.jsdelivr.net (fawazahmed0) — Arabic + ID/EN ──────────────
+// Edition Indonesia: ind-maududi, Inggris: eng-abdulhaleem
+async function fetchFromJsdelivr(n, lang) {
+  const trEdition = lang === 'id' ? 'ind-maududi' : 'eng-abdulhaleem';
+  const BASE = 'https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1/editions';
+  const [arRes, trRes] = await Promise.all([
+    fetchWithTimeout(`${BASE}/ara-quranuthmanihaf/${n}.min.json`, 8000),
+    fetchWithTimeout(`${BASE}/${trEdition}/${n}.min.json`, 8000)
+  ]);
+  if (!arRes.ok || !trRes.ok) throw new Error('fetch failed');
+  const arJson = await arRes.json();
+  const trJson = await trRes.json();
+  if (!arJson.chapter) throw new Error('no chapter');
+  return arJson.chapter.map((v, i) => ({
+    num: v.verse,
+    arabic: v.text,
+    trans: trJson.chapter?.[i]?.translation || '—'
+  }));
+}
+
+// ─── SOURCE 3: quranapi.pages.dev — Arabic only, terjemahan ID dari jsDelivr ─
+async function fetchFromQuranApiPages(n, lang) {
+  const data = await fetchWithTimeout(`https://quranapi.pages.dev/api/${n}.json`, 8000)
+    .then(r => r.json());
+  if (!data.arabic1) throw new Error('no arabic1');
+
+  // Ambil terjemahan Indonesia dari jsDelivr secara terpisah
+  let translations = data.english || [];
+  if (lang === 'id') {
+    try {
+      const trRes = await fetchWithTimeout(
+        `https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1/editions/ind-maududi/${n}.min.json`, 7000
+      );
+      if (trRes.ok) {
+        const trJson = await trRes.json();
+        if (trJson.chapter) translations = trJson.chapter.map(v => v.translation);
+      }
+    } catch(e) { /* tetap pakai english */ }
+  }
+
+  return data.arabic1.map((ar, i) => ({
+    num: i + 1,
+    arabic: ar,
+    trans: translations[i] || '—'
+  }));
+}
+
+// ─── SOURCE 4: alquran-api.pages.dev ────────────────────────────────────────
+async function fetchFromAlquranApiPages(n, lang) {
+  const langParam = lang === 'id' ? 'id' : 'en';
+  const res = await fetchWithTimeout(
+    `https://alquran-api.pages.dev/api/quran/surah/${n}?lang=${langParam}`, 8000
+  );
+  if (!res.ok) throw new Error('not ok');
+  const data = await res.json();
+  if (!data.verses) throw new Error('no verses');
+  return data.verses.map(v => ({
+    num: v.id,
+    arabic: v.text,
+    trans: v.translation || '—'
+  }));
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function fetchWithTimeout(url, ms) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(t));
+}
+
+function renderSurah(ayahs, n) {
+  const meta = SURAH_META[n - 1];
+  // Header
+  document.getElementById('surahArabicName').textContent = meta.ar;
+  document.getElementById('surahLatinName').textContent = `${meta.la} — ${meta.tr}`;
+  document.getElementById('surahMeta').textContent = `${meta.rev === 'Makkah' ? 'Makkiyah' : 'Madaniyah'} • ${meta.total} Ayat`;
+  document.getElementById('surahHeader').classList.add('vis');
+  // Basmalah (kecuali At-Tawbah = 9)
+  if (n !== 9) document.getElementById('basmalah').classList.add('vis');
+
+  const container = document.getElementById('ayatContainer');
+  container.innerHTML = '';
+  ayahs.forEach((a, i) => {
+    const card = document.createElement('div');
+    card.className = 'ayat-card';
+    card.style.animationDelay = `${Math.min(i * 0.03, 0.5)}s`;
+    card.innerHTML = `
+      <div class="ayat-top"><span class="ayat-num">${a.num}</span></div>
+      <div class="ayat-arabic">${a.arabic}</div>
+      <div class="ayat-trans">
+        <span class="trans-label">Terjemahan</span>
+        ${a.trans}
+      </div>`;
+    container.appendChild(card);
+  });
+
+  document.getElementById('navBar').classList.add('vis');
+  document.getElementById('navInfo').textContent = `${n} / 114`;
+  document.getElementById('btnPrev').disabled = n <= 1;
+  document.getElementById('btnNext').disabled = n >= 114;
+}
+
+function clearContent() {
+  document.getElementById('ayatContainer').innerHTML = '';
+  document.getElementById('surahHeader').classList.remove('vis');
+  document.getElementById('basmalah').classList.remove('vis');
+}
+function showLoading(show, detail) {
+  document.getElementById('loading').classList.toggle('vis', show);
+  if (detail) document.getElementById('loadingDetail').textContent = detail;
+}
+function showError(msg) {
+  document.getElementById('errorDetail').textContent = msg;
+  document.getElementById('errorBox').classList.add('vis');
+}
+function hideError() { document.getElementById('errorBox').classList.remove('vis'); }
+function setStatus(msg) { document.getElementById('apiStatus').textContent = msg; }
+function retryLoad() { if (currentNum) loadSurah(currentNum); }
+function randomSurah() {
+  const n = Math.floor(Math.random() * 114) + 1;
+  document.getElementById('surahSel').value = n;
+  loadSurah(n);
+}
+function prevSurah() { if (currentNum > 1) loadSurah(currentNum - 1); }
+function nextSurah() { if (currentNum < 114) loadSurah(currentNum + 1); }
+</script>
+</body>
+</html>
